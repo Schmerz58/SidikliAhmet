@@ -11,7 +11,8 @@ import time
 class Bot(BaseBot):
     def __init__(self):
         super().__init__()
-        self.target_room_id = "6510519bef2d56a7ddd1391d"
+        self.target_room_id_inek = "6510519bef2d56a7ddd1391d"
+        self.target_room_id_grab = "66120073266df7ec832b3d6a"
         self.is_teleporting_dict = {}
         self.following_user = None
         self.following_user_id = None
@@ -285,14 +286,31 @@ class Bot(BaseBot):
                 target_user = next((u for u, _ in room_users if u.username.lower() == target_username), None)
 
                 if target_user and target_user.username.lower() != "karainek":
-                    await self.move_user_to_target_room(target_user.id)
+                    await self.move_user_to_target_room(target_user.id, self.target_room_id_inek)
             except Exception as e:
                 print(f"An error occurred while moving the user: {e}")
       
         if message == "-inek":
-            await self.move_user_to_target_room(user.id)
+            await self.move_user_to_target_room(user.id, self.target_room_id_inek)
         if message.lower() == "herkes inek" and await self.is_user_allowed(user):
-            await self.move_users_to_target_room()
+            await self.move_users_to_target_room(self.target_room_id_inek)
+        
+        if message.lower().startswith("grab") and await self.is_user_allowed(user):
+            target_username = message.split("@")[-1].strip().lower()
+
+            try:
+                room_users = (await self.highrise.get_room_users()).content
+                target_user = next((u for u, _ in room_users if u.username.lower() == target_username), None)
+
+                if target_user:
+                    await self.move_user_to_target_room(target_user.id, self.target_room_id_grab)
+            except Exception as e:
+                print(f"An error occurred while moving the user: {e}")
+      
+        if message == "grab":
+            await self.move_user_to_target_room(user.id, self.target_room_id_grab)
+        if message.lower() == "herkes grab" and await self.is_user_allowed(user):
+            await self.move_users_to_target_room(self.target_room_id_grab)
     
 
         if message.lower().startswith("ceza") and await self.is_user_allowed(user):
@@ -377,14 +395,14 @@ class Bot(BaseBot):
             except Exception as e:
                 print(f"An error occurred while reacting: {e}")
 
-    async def move_users_to_target_room(self):
+    async def move_users_to_target_room(self, target_room_id: str):
         room_users = (await self.highrise.get_room_users()).content
 
         for room_user, _ in room_users:
-                await self.highrise.move_user_to_room(room_user.id, self.target_room_id)
+                await self.highrise.move_user_to_room(room_user.id, target_room_id)
               
-    async def move_user_to_target_room(self, user_id: str):
-        await self.highrise.move_user_to_room(user_id, self.target_room_id)
+    async def move_user_to_target_room(self, user_id: str, target_room_id: str):
+        await self.highrise.move_user_to_room(user_id, target_room_id)
   
     async def is_user_allowed(self, user: User) -> bool:
         user_privileges = await self.highrise.get_room_privilege(user.id)
